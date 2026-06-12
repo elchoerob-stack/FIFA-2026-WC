@@ -629,8 +629,15 @@ function setLoading(on){
   document.getElementById('aiSpinner').classList.toggle('visible',on);
 }
 
+function showError(msg){
+  document.getElementById('lastUpdated').textContent='❌ '+msg;
+  // Also show big alert box so it's impossible to miss
+  let box=document.getElementById('debugBox');
+  if(!box){box=document.createElement('div');box.id='debugBox';box.style.cssText='position:fixed;top:0;left:0;right:0;background:#8b0000;color:#fff;padding:12px 16px;font-size:12px;z-index:9999;word-break:break-all;line-height:1.5;';const close=document.createElement('button');close.textContent='✕';close.style.cssText='float:right;background:none;border:none;color:#fff;font-size:16px;cursor:pointer;';close.onclick=()=>box.remove();box.appendChild(close);document.body.appendChild(box);}
+  box.childNodes[0].textContent=msg;
+}
+
 async function callClaudeWithSearch(prompt){
-  // Simple single-turn call — no tool use, just direct knowledge query
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
@@ -643,23 +650,25 @@ async function callClaudeWithSearch(prompt){
       body:JSON.stringify({
         model:'claude-sonnet-4-6',
         max_tokens:2000,
-        system:'You are a FIFA World Cup 2026 scores assistant. You have up-to-date knowledge of all match results. Always respond with ONLY a raw JSON array — no markdown, no explanation, no preamble.',
+        system:'You output ONLY raw JSON arrays. No prose. No markdown. No explanation. Your entire response must start with [ and end with ]. If you add any other text the application will break.',
         messages:[{role:'user',content:prompt}]
       })
     });
     if(!res.ok){
-      const err=await res.text();
-      console.warn('API error:',res.status,err);
-      document.getElementById('lastUpdated').textContent='API error '+res.status+' — check your key in ⚙️';
+      let errText='';
+      try{errText=await res.text();}catch(e){}
+      showError('API '+res.status+': '+errText.substring(0,200));
       return '';
     }
     const data=await res.json();
+    if(data.error){showError('API error: '+JSON.stringify(data.error));return '';}
     if(data.content&&data.content[0]&&data.content[0].type==='text') return data.content[0].text;
+    showError('Unexpected response: '+JSON.stringify(data).substring(0,200));
+    return '';
   }catch(e){
-    console.warn('Fetch error:',e);
-    document.getElementById('lastUpdated').textContent='Network error — '+e.message;
+    showError('Network/CORS error: '+e.message+' — GitHub may be blocking the API call');
+    return '';
   }
-  return '';
 }
 
 async function fetchLiveScores(){
@@ -668,12 +677,9 @@ async function fetchLiveScores(){
   GROUPS.forEach(g=>g.matches.forEach(m=>{const hr=(now-parseUTC(m.date,m.timeUTC))/3600000;if(hr>=-1&&hr<=168)relevant.push({group:g.id,home:m.home,away:m.away,key:matchKey(m)});}));
   if(relevant.length>0){
     const list=relevant.map(m=>`- ${m.home} vs ${m.away} (Group ${m.group})`).join('\n');
-    const prompt=`Today is ${now.toISOString()}. FIFA World Cup 2026 group stage results so far. Give me the score for every match listed. Respond with ONLY a JSON array, nothing else:\n[{"key":"Mexico vs South Africa","status":"finished","scoreH":1,"scoreA":0}]\n\nMatches:\n${list}`;
+    const prompt=list+'\n\nReturn ONLY a JSON array. No words before or after. Example format: [{"key":"Mexico vs South Africa","status":"finished","scoreH":1,"scoreA":0},{"key":"Korea Republic vs Czechia","status":"finished","scoreH":2,"scoreH":1}]';
     try{
       const raw=await callClaudeWithSearch(prompt);
-      // Show raw response in status bar for debugging
-      const preview=raw.substring(0,120).replace(/\n/g,' ');
-      document.getElementById('lastUpdated').textContent='API raw: '+preview;
       const cleaned=raw.replace(/```json|```/g,'').trim();
       const s=cleaned.indexOf('['),e=cleaned.lastIndexOf(']');
       if(s!==-1&&e!==-1){
@@ -681,10 +687,10 @@ async function fetchLiveScores(){
         parsed.forEach(item=>{if(item.key&&item.status)liveScores[item.key]={status:item.status,scoreH:item.scoreH!=null?Number(item.scoreH):null,scoreA:item.scoreA!=null?Number(item.scoreA):null};});
         document.getElementById('lastUpdated').textContent='Loaded '+parsed.length+' scores · '+new Date().toLocaleTimeString('en-ZA',{timeZone:'Africa/Johannesburg'})+' SAST';
       } else {
-        document.getElementById('lastUpdated').textContent='No JSON found in response: '+preview;
+        document.getElementById('lastUpdated').textContent='No JSON in response — '+cleaned.substring(0,80);
       }
     }catch(err){
-      document.getElementById('lastUpdated').textContent='Error: '+err.message;
+      document.getElementById('lastUpdated').textContent='Parse error: '+err.message;
       console.warn('Score fetch error:',err);
     }
   } else {
