@@ -636,63 +636,35 @@ function renderFixtures(){
 }
 
 // ══════════════════════════════════════════════════════════
-// SCORE FETCHING (SIMULATED FOR 2026)
+// TAB: RESULTS
 // ══════════════════════════════════════════════════════════
-function setLoading(on){
-  ['refreshBtn','refreshBtn2','refreshBtn3','refreshBtn4'].forEach(id=>{
-    const b=document.getElementById(id);
-    if(!b)return;
-    b.classList.toggle('loading',on);
-    b.textContent=on?'↻ Checking…':'⟳ Refresh';
-  });
-  document.getElementById('aiSpinner').classList.toggle('visible',on);
+function renderResults(){
+  const c=document.getElementById('resultsContainer');
+  c.innerHTML='';
+  const done=[];
+  GROUPS.forEach(g=>g.matches.forEach(m=>{
+    const info=getStatus(m);
+    if(info.status!=='finished'&&info.status!=='live') return;
+    const kick=fmtSAST(m.date,m.timeUTC);
+    done.push({m,g:g.id,kick});
+  }));
+  if(done.length===0){
+    c.innerHTML=`<div class="empty-state"><div class="empty-icon">⏳</div><p>No completed matches yet.<br>Results will appear here as games finish.</p></div>`;
+    return;
+  }
+  done.sort((a,b)=>b.kick.ts-a.kick.ts);
+  let lastDate='';
+  done.forEach(({m,g,kick})=>{
+    if(kick.saDate!==lastDate){
+      lastDate=kick.saDate;
+      const div=document.createElement('div');
+      div.className='date-divider';
+      div.innerHTML=`<div class="date-divider-line"></div><div class="date-divider-label">${kick.date.replace(/^[A-Za-z]+,?\s*/,'')}</div><div class="date-divider-line"></div>`;
+      c.appendChild(div);
+    }
+    c.appendChild(buildMatchCard(m,g,'result'));
+  });
 }
-
-async function fetchLiveScores(){
-  setLoading(true);
-  const now = new Date(); // Checks the current date and time
-  
-  // Simulate network loading delay
-  await new Promise(r => setTimeout(r, 600));
-
-  GROUPS.forEach(g => {
-    g.matches.forEach(m => {
-      const kick = parseUTC(m.date, m.timeUTC);
-      const end = new Date(kick.getTime() + 110 * 60000); // Match ends ~110 mins after kickoff
-      const key = matchKey(m);
-      
-      // If the match end time has passed based on the current clock
-      if (now > end) {
-        // Inject the predicted scores as the final results!
-        liveScores[key] = { status: 'finished', scoreH: m.predH, scoreA: m.predA };
-      } 
-      // If the match is currently playing
-      else if (now >= kick && now <= end) {
-        liveScores[key] = { status: 'live', scoreH: 0, scoreA: 0 };
-      }
-    });
-  });
-
-  updatePredBar();
-  renderFixtures();
-  renderResults();
-  renderStandings();
-  setLoading(false);
-  document.getElementById('lastUpdated').textContent='Last updated '+new Date().toLocaleTimeString('en-ZA',{timeZone:'Africa/Johannesburg'})+' SAST';
-}
-
-async function fetchPlayoffScores(){
-  setLoading(true);
-  await new Promise(r => setTimeout(r, 600));
-  renderPlayoffs();
-  setLoading(false);
-}
-
-// ── Init ──
-updatePredBar();
-renderFixtures();
-fetchLiveScores();
-setInterval(fetchLiveScores,3*60*1000);
 // ══════════════════════════════════════════════════════════
 // TAB: STANDINGS
 // ══════════════════════════════════════════════════════════
