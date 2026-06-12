@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="WC 2026">
-<link rel="manifest" href="data:application/json,{%22name%22:%22FIFA%20World%20Cup%202026%22,%22short_name%22:%22WC%202026%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%230a0f0d%22,%22theme_color%22:%22%230a0f0d%22,%22icons%22:[{%22src%22:%22https://img.icons8.com/color/512/football2--v1.png%22,%22sizes%22:%22512x512%22,%22type%22:%22image/png%22}]}">
+<link rel="manifest" href="./manifest.json">
 <title>WC 2026</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap');
@@ -22,8 +22,6 @@ header h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(20px,5vw,42px);let
 header h1 span{color:var(--gold);}
 .header-sub{margin-top:3px;font-size:10px;color:var(--muted);letter-spacing:1px;}
 .last-updated{margin-top:2px;font-size:10px;color:#3a5040;}
-.install-btn{position:absolute;top:50%;right:12px;transform:translateY(-50%);background:var(--gold);color:var(--dark);border:none;border-radius:8px;padding:7px 11px;font-size:10px;font-weight:700;cursor:pointer;line-height:1.3;text-align:center;letter-spacing:.3px;display:flex;flex-direction:column;align-items:center;gap:1px;}
-.install-btn span{font-size:16px;line-height:1;}
 .pred-accuracy-bar{background:#0d1e10;border-bottom:1px solid var(--border);padding:8px 16px;}
 .pred-bar-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;}
 .pred-bar-title{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);}
@@ -100,14 +98,14 @@ header h1 span{color:var(--gold);}
 .score-input-wrap{display:flex;flex-direction:column;align-items:center;gap:6px;}
 .score-input-label{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
 .score-stepper{display:flex;align-items:center;}
-.stepper-btn{width:44px;height:52px;background:#0d1e10;border:1px solid var(--border);color:var(--text);font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;-webkit-tap-highlight-color:transparent;}
+.stepper-btn{width:44px;height:52px;background:#0d1e10;border:1px solid var(--border);color:var(--text);font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;}
 .stepper-btn:first-child{border-radius:8px 0 0 8px;}
 .stepper-btn:last-child{border-radius:0 8px 8px 0;}
 .stepper-btn:active{background:#1a3020;}
 .stepper-val{font-family:'Bebas Neue',sans-serif;font-size:38px;min-width:56px;text-align:center;background:#0a1510;border-top:1px solid var(--border);border-bottom:1px solid var(--border);height:52px;line-height:52px;color:var(--text);}
 .score-sep-modal{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--muted);margin-top:22px;}
 .modal-btns{display:flex;gap:10px;}
-.modal-btn{flex:1;padding:14px;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.3px;-webkit-tap-highlight-color:transparent;}
+.modal-btn{flex:1;padding:14px;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;}
 .modal-btn-cancel{background:#1a2e1e;color:var(--muted);}
 .modal-btn-save{background:var(--gold);color:var(--dark);}
 .modal-btn-clear{background:#2a1010;color:#e07070;font-size:11px;flex:0 0 auto;padding:14px 16px;}
@@ -152,16 +150,14 @@ header h1 span{color:var(--gold);}
 .playoff-match-meta{font-size:9px;color:#3a5040;padding:4px 11px 6px;text-align:center;}
 .final-match{border:1px solid var(--gold);box-shadow:0 0 20px rgba(200,168,75,.1);}
 .final-match .playoff-match-header{background:linear-gradient(90deg,#1a1400,#0d1e10);color:var(--gold);}
-
-/* INSTALL BANNER */
-.install-banner{background:linear-gradient(90deg,#0d2215,#111a14);border:1px solid var(--gold);border-radius:12px;padding:14px 16px;margin:14px 14px 0;display:flex;align-items:center;gap:12px;}
+.install-banner{background:linear-gradient(90deg,#0d2215,#111a14);border:1px solid var(--gold);border-radius:12px;padding:14px 16px;margin:14px 14px 0;display:none;align-items:center;gap:12px;}
+.install-banner.show{display:flex;}
 .install-banner-icon{font-size:28px;flex-shrink:0;}
 .install-banner-text{flex:1;}
 .install-banner-text strong{display:block;font-size:13px;color:var(--gold);margin-bottom:2px;}
 .install-banner-text span{font-size:11px;color:var(--muted);line-height:1.4;}
 .install-banner-btn{background:var(--gold);color:var(--dark);border:none;border-radius:8px;padding:10px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;}
 .install-banner-close{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 0 0 8px;line-height:1;flex-shrink:0;}
-
 @media(max-width:500px){
   .playoff-grid-2{grid-template-columns:1fr;}
   .tab-btn{font-size:10px;padding:10px 2px;}
@@ -174,12 +170,11 @@ header h1 span{color:var(--gold);}
 
 <div id="mainApp">
 
-<!-- INSTALL BANNER (shown until dismissed or installed) -->
-<div class="install-banner" id="installBanner" style="display:none">
+<div class="install-banner" id="installBanner">
   <div class="install-banner-icon">⚽</div>
   <div class="install-banner-text">
-    <strong>Install as App</strong>
-    <span>Tap Install, then "Add to Home Screen" for the best experience.</span>
+    <strong>Install App</strong>
+    <span>Add to your home screen for the best experience.</span>
   </div>
   <button class="install-banner-btn" id="installBannerBtn" onclick="triggerInstall()">Install</button>
   <button class="install-banner-close" onclick="dismissBanner()">✕</button>
@@ -192,7 +187,6 @@ header h1 span{color:var(--gold);}
     <div class="header-sub">USA · CANADA · MEXICO &nbsp;|&nbsp; 11 JUN – 19 JUL</div>
     <div class="last-updated" id="lastUpdated"></div>
   </header>
-
   <div class="pred-accuracy-bar">
     <div class="pred-bar-header">
       <div class="pred-bar-title">🎯 Prediction Accuracy</div>
@@ -216,7 +210,6 @@ header h1 span{color:var(--gold);}
       <div class="pred-legend-item"><div class="pred-legend-dot" style="background:var(--border)"></div>Not yet played</div>
     </div>
   </div>
-
   <div class="tab-bar">
     <button class="tab-btn active" onclick="switchTab('fixtures',this)">📅 Fixtures</button>
     <button class="tab-btn" onclick="switchTab('results',this)">✅ Results</button>
@@ -276,7 +269,7 @@ header h1 span{color:var(--gold);}
 
 <script>
 // ══════════════════════════════════════════════════════════
-// PERSISTENT SCORES
+// SCORES — persisted in localStorage
 // ══════════════════════════════════════════════════════════
 let SCORES = {};
 try { SCORES = JSON.parse(localStorage.getItem('wc2026_scores') || '{}'); } catch(e){ SCORES = {}; }
@@ -432,20 +425,19 @@ const FLAGS = {
 let deferredPrompt = null;
 
 function showInstallBanner(){
-  if(!sessionStorage.getItem('installDismissed') && !window.matchMedia('(display-mode: standalone)').matches){
-    document.getElementById('installBanner').style.display = 'flex';
-  }
+  if(window.matchMedia('(display-mode: standalone)').matches) return;
+  if(sessionStorage.getItem('installDismissed')) return;
+  document.getElementById('installBanner').classList.add('show');
 }
 
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   deferredPrompt = e;
-  document.getElementById('installBannerBtn').textContent = 'Install';
   showInstallBanner();
 });
 
 window.addEventListener('appinstalled', () => {
-  document.getElementById('installBanner').style.display = 'none';
+  document.getElementById('installBanner').classList.remove('show');
   deferredPrompt = null;
 });
 
@@ -454,26 +446,23 @@ function triggerInstall(){
     deferredPrompt.prompt();
     deferredPrompt.userChoice.then(() => {
       deferredPrompt = null;
-      document.getElementById('installBanner').style.display = 'none';
+      document.getElementById('installBanner').classList.remove('show');
     });
   } else {
-    // Fallback: guide user manually
-    alert('To install:\n\nChrome: tap the ⋮ menu → "Add to Home screen"\nSamsung: tap ⋮ menu → "Add page to" → "Home screen"');
+    alert('To install:\n\nTap the ⋮ menu in Chrome\n→ "Add to Home screen"');
   }
 }
 
 function dismissBanner(){
   sessionStorage.setItem('installDismissed','1');
-  document.getElementById('installBanner').style.display = 'none';
+  document.getElementById('installBanner').classList.remove('show');
 }
 
-// Show banner after short delay if not already installed
-setTimeout(showInstallBanner, 1000);
-
-// Register service worker for PWA
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
 }
+
+setTimeout(showInstallBanner, 1500);
 
 // ══════════════════════════════════════════════════════════
 // MODAL
@@ -482,9 +471,9 @@ let modalMatch = null, modalScoreH = 0, modalScoreA = 0;
 
 function openModal(m){
   modalMatch = m;
-  const existing = SCORES[matchKey(m)];
-  modalScoreH = existing ? existing.scoreH : 0;
-  modalScoreA = existing ? existing.scoreA : 0;
+  const ex = SCORES[matchKey(m)];
+  modalScoreH = ex ? ex.scoreH : 0;
+  modalScoreA = ex ? ex.scoreA : 0;
   document.getElementById('modalMatchLabel').textContent = `Group ${m._gid} · MD${m.md}`;
   document.getElementById('modalFlagH').textContent = FLAGS[m.home]||'🏳️';
   document.getElementById('modalFlagA').textContent = FLAGS[m.away]||'🏳️';
@@ -554,7 +543,7 @@ function updatePredBar(){
     const s=SCORES[matchKey(m)];
     if(!s){pending++;return;}
     if(s.scoreH===m.predH&&s.scoreA===m.predA){exact++;return;}
-    const ar=s.scoreH>s.scoreA?'H':s.scoreH<s.scoreA?'A':'D', pr=m.predH>m.predA?'H':m.predH<m.predA?'A':'D';
+    const ar=s.scoreH>s.scoreA?'H':s.scoreH<s.scoreA?'A':'D',pr=m.predH>m.predA?'H':m.predH<m.predA?'A':'D';
     if(ar===pr){result++;return;} wrong++;
   }));
   const total=exact+result+wrong+pending;
@@ -573,8 +562,8 @@ function updatePredBar(){
 // MATCH CARD
 // ══════════════════════════════════════════════════════════
 function buildMatchCard(m,gId,mode){
-  const key=matchKey(m), s=SCORES[key], kick=fmtSAST(m.date,m.timeUTC);
-  const hasScore=s!=null, status=hasScore?'finished':'upcoming';
+  const key=matchKey(m),s=SCORES[key],kick=fmtSAST(m.date,m.timeUTC);
+  const hasScore=s!=null,status=hasScore?'finished':'upcoming';
   const badge=hasScore
     ?'<span class="match-status-badge badge-finished">✓ Full Time</span>'
     :'<span class="match-status-badge badge-upcoming">Upcoming</span>';
@@ -614,9 +603,9 @@ function switchTab(id,btn){
 // RENDERS
 // ══════════════════════════════════════════════════════════
 function renderFixtures(){
-  const c=document.getElementById('fixturesContainer'); c.innerHTML='';
+  const c=document.getElementById('fixturesContainer');c.innerHTML='';
   const up=[];
-  GROUPS.forEach(g=>g.matches.forEach(m=>{if(SCORES[matchKey(m)])return; const kick=fmtSAST(m.date,m.timeUTC); up.push({m,g:g.id,kick});}));
+  GROUPS.forEach(g=>g.matches.forEach(m=>{if(SCORES[matchKey(m)])return;const kick=fmtSAST(m.date,m.timeUTC);up.push({m,g:g.id,kick});}));
   if(up.length===0){c.innerHTML='<div class="empty-state"><div class="empty-icon">🏁</div><p>All group stage matches played.</p></div>';return;}
   up.sort((a,b)=>a.kick.ts-b.kick.ts);
   let last='';
@@ -627,9 +616,9 @@ function renderFixtures(){
 }
 
 function renderResults(){
-  const c=document.getElementById('resultsContainer'); c.innerHTML='';
+  const c=document.getElementById('resultsContainer');c.innerHTML='';
   const all=[];
-  GROUPS.forEach(g=>g.matches.forEach(m=>{if(!isMatchPast(m))return; const kick=fmtSAST(m.date,m.timeUTC); all.push({m,g:g.id,kick});}));
+  GROUPS.forEach(g=>g.matches.forEach(m=>{if(!isMatchPast(m))return;const kick=fmtSAST(m.date,m.timeUTC);all.push({m,g:g.id,kick});}));
   if(all.length===0){c.innerHTML='<div class="empty-state"><div class="empty-icon">⏳</div><p>No matches have kicked off yet.</p></div>';return;}
   all.sort((a,b)=>b.kick.ts-a.kick.ts);
   let last='';
@@ -640,7 +629,7 @@ function renderResults(){
 }
 
 function renderStandings(){
-  const c=document.getElementById('standingsContainer'); c.innerHTML='';
+  const c=document.getElementById('standingsContainer');c.innerHTML='';
   GROUPS.forEach(g=>{
     const rows={};
     g.teams.forEach(t=>{rows[t]={team:t,p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0};});
@@ -651,12 +640,12 @@ function renderStandings(){
     let html=`<div class="group-header"><span class="group-label">GROUP ${g.id}</span><span class="group-teams-list">${ts}</span></div><table class="standings-table"><thead><tr><th style="width:44%">Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th></tr></thead><tbody>`;
     sorted.forEach((r,i)=>{const gd=r.gf-r.ga,gs=gd>0?'+'+gd:gd,gc=gd>0?'pos-gd':gd<0?'neg-gd':'',bar=i===0?'qual-1st':i===1?'qual-2nd':i===2?'qual-3rd':'qual-out';html+=`<tr><td><div class="team-cell"><span class="qual-bar ${bar}"></span><span class="pos-num pos-${i+1}">${i+1}</span><span style="font-size:14px">${FLAGS[r.team]||''}</span><span style="font-size:12px;font-weight:600">${r.team}</span></div></td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gf}</td><td>${r.ga}</td><td class="td-gd ${gc}">${r.p>0?gs:'—'}</td><td class="td-pts">${r.pts}</td></tr>`;});
     html+=`</tbody></table><div class="standings-note"><div class="note-item"><span class="qual-bar qual-1st" style="height:10px;width:10px;border-radius:2px;display:inline-block"></span>1st</div><div class="note-item"><span class="qual-bar qual-2nd" style="height:10px;width:10px;border-radius:2px;display:inline-block"></span>2nd</div><div class="note-item"><span class="qual-bar qual-3rd" style="height:10px;width:10px;border-radius:2px;display:inline-block"></span>3rd (may advance)</div></div>`;
-    block.innerHTML=html; c.appendChild(block);
+    block.innerHTML=html;c.appendChild(block);
   });
 }
 
 function renderPlayoffs(){
-  const c=document.getElementById('playoffsContainer'); c.innerHTML='';
+  const c=document.getElementById('playoffsContainer');c.innerHTML='';
   const secs=[{title:'Round of 32',data:PLAYOFFS.r32,cols:2},{title:'Round of 16',data:PLAYOFFS.r16,cols:2},{title:'Quarter-finals',data:PLAYOFFS.qf,cols:2},{title:'Semi-finals',data:PLAYOFFS.sf,cols:2},{title:'3rd Place Play-off',data:PLAYOFFS.third,cols:1},{title:'⚽ The Final · 19 July 2026',data:PLAYOFFS.final,cols:1}];
   secs.forEach(sec=>{
     const section=document.createElement('div');section.className='playoff-section';section.innerHTML=`<div class="playoff-section-title">${sec.title}</div>`;
@@ -669,7 +658,7 @@ function renderPlayoffs(){
       card.innerHTML=`<div class="playoff-match-header"><span>${m.label}</span><span class="match-status-badge badge-upcoming">Upcoming</span></div><div class="playoff-team-row"><div class="playoff-team-name${tbA?' tbd':''}">${tbA?'':((FLAGS[m.teamA]||'')+'&nbsp;')}${m.teamA}</div><div class="playoff-score tbd-score">—</div></div><div class="playoff-team-row"><div class="playoff-team-name${tbB?' tbd':''}">${tbB?'':((FLAGS[m.teamB]||'')+'&nbsp;')}${m.teamB}</div><div class="playoff-score tbd-score">—</div></div><div class="playoff-match-meta">${kick.date} · ${kick.time} · ${m.venue}</div>`;
       grid.appendChild(card);
     });
-    section.appendChild(grid); c.appendChild(section);
+    section.appendChild(grid);c.appendChild(section);
   });
 }
 
@@ -686,9 +675,6 @@ function refreshAll(){
     :'Go to Results tab · tap any match to enter score';
 }
 
-// ══════════════════════════════════════════════════════════
-// INIT
-// ══════════════════════════════════════════════════════════
 refreshAll();
 renderFixtures();
 </script>
