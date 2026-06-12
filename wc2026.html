@@ -668,15 +668,30 @@ async function fetchLiveScores(){
   GROUPS.forEach(g=>g.matches.forEach(m=>{const hr=(now-parseUTC(m.date,m.timeUTC))/3600000;if(hr>=-1&&hr<=168)relevant.push({group:g.id,home:m.home,away:m.away,key:matchKey(m)});}));
   if(relevant.length>0){
     const list=relevant.map(m=>`- ${m.home} vs ${m.away} (Group ${m.group})`).join('\n');
-    const prompt=`Today is ${now.toISOString()}. The FIFA World Cup 2026 group stage is in progress.\n\nProvide the current scores for these matches:\n${list}\n\n[{"key":"Mexico vs South Africa","status":"finished","scoreH":1,"scoreA":0},...]\n\nRules:\n- key must match EXACTLY as written (e.g. "Mexico vs South Africa")\n- status: "finished" if full time, "live" if in progress, "upcoming" if not yet started\n- scoreH = home goals, scoreA = away goals, integer or null if not started\n- Return ALL matches from the list above`;
+    const prompt=`Today is ${now.toISOString()}. FIFA World Cup 2026 group stage results so far. Give me the score for every match listed. Respond with ONLY a JSON array, nothing else:\n[{"key":"Mexico vs South Africa","status":"finished","scoreH":1,"scoreA":0}]\n\nMatches:\n${list}`;
     try{
-      const raw=await callClaudeWithSearch(prompt),cleaned=raw.replace(/```json|```/g,'').trim(),s=cleaned.indexOf('['),e=cleaned.lastIndexOf(']');
-      if(s!==-1&&e!==-1){JSON.parse(cleaned.substring(s,e+1)).forEach(item=>{if(item.key&&item.status)liveScores[item.key]={status:item.status,scoreH:item.scoreH!=null?Number(item.scoreH):null,scoreA:item.scoreA!=null?Number(item.scoreA):null};});}
-    }catch(err){console.warn('Score fetch error:',err);}
+      const raw=await callClaudeWithSearch(prompt);
+      // Show raw response in status bar for debugging
+      const preview=raw.substring(0,120).replace(/\n/g,' ');
+      document.getElementById('lastUpdated').textContent='API raw: '+preview;
+      const cleaned=raw.replace(/```json|```/g,'').trim();
+      const s=cleaned.indexOf('['),e=cleaned.lastIndexOf(']');
+      if(s!==-1&&e!==-1){
+        const parsed=JSON.parse(cleaned.substring(s,e+1));
+        parsed.forEach(item=>{if(item.key&&item.status)liveScores[item.key]={status:item.status,scoreH:item.scoreH!=null?Number(item.scoreH):null,scoreA:item.scoreA!=null?Number(item.scoreA):null};});
+        document.getElementById('lastUpdated').textContent='Loaded '+parsed.length+' scores · '+new Date().toLocaleTimeString('en-ZA',{timeZone:'Africa/Johannesburg'})+' SAST';
+      } else {
+        document.getElementById('lastUpdated').textContent='No JSON found in response: '+preview;
+      }
+    }catch(err){
+      document.getElementById('lastUpdated').textContent='Error: '+err.message;
+      console.warn('Score fetch error:',err);
+    }
+  } else {
+    document.getElementById('lastUpdated').textContent='No relevant matches in window';
   }
   updatePredBar();renderFixtures();renderResults();renderStandings();
   setLoading(false);
-  document.getElementById('lastUpdated').textContent='Last updated '+new Date().toLocaleTimeString('en-ZA',{timeZone:'Africa/Johannesburg'})+' SAST';
 }
 
 async function fetchPlayoffScores(){
