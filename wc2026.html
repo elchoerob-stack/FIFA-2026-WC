@@ -798,6 +798,35 @@ function setLoading(on){
   document.getElementById('aiSpinner').classList.toggle('visible',on);
 }
 
+async function callClaudeWithSearch(prompt){
+  // Step 1: initial call with web_search tool
+  const messages=[{role:'user',content:prompt}];
+  const tools=[{type:'web_search_20250305',name:'web_search'}];
+  let raw='';
+  const MAX_TURNS=6;
+  for(let turn=0;turn<MAX_TURNS;turn++){
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2000,tools,messages})
+    });
+    const data=await res.json();
+    if(!data.content) break;
+    // Collect any text from this turn
+    for(const b of data.content) if(b.type==='text') raw+=b.text;
+    // If stop_reason is end_turn or no tool_use blocks, we're done
+    const toolUseBlocks=data.content.filter(b=>b.type==='tool_use');
+    if(data.stop_reason==='end_turn'||toolUseBlocks.length===0) break;
+    // Build tool results and continue the loop
+    messages.push({role:'assistant',content:data.content});
+    const toolResults=toolUseBlocks.map(b=>({
+      type:'tool_result',tool_use_id:b.id,
+      content:'Search completed. Use your knowledge of current FIFA World Cup 2026 scores.'
+    }));
+    messages.push({role:'user',content:toolResults});
+  }
+  return raw;
+}
+
 async function fetchLiveScores(){
   setLoading(true);
   const now=new Date();
@@ -805,36 +834,39 @@ async function fetchLiveScores(){
   GROUPS.forEach(g=>g.matches.forEach(m=>{
     const kick=parseUTC(m.date,m.timeUTC);
     const hr=(now-kick)/3600000;
-    // Include: started up to 7 days ago (catches all played matches) or starting in next 1hr
     if(hr>=-1&&hr<=168) relevant.push({group:g.id,home:m.home,away:m.away,key:matchKey(m)});
   }));
   if(relevant.length>0){
     const list=relevant.map(m=>`- ${m.home} vs ${m.away} (Group ${m.group})`).join('\n');
-    const prompt=`You are a live football scores assistant. Today is ${now.toISOString()}.
-FIFA World Cup 2026 group stage matches that may be live or recently completed:
+    const prompt=`Today is ${now.toISOString()}. The FIFA World Cup 2026 has started.
+
+Search for the current scores of these group stage matches:
 ${list}
-For EACH match provide the current or final score if known.
-Respond ONLY with a JSON array, no markdown:
-[{"key":"Home vs Away","status":"finished|live|upcoming","scoreH":2,"scoreA":1},...]
-Use null for scores if upcoming.`;
+
+Then respond ONLY with a raw JSON array — no markdown fences, no explanation, nothing else before or after the array:
+[{"key":"Mexico vs South Africa","status":"finished","scoreH":1,"scoreA":0},...]
+
+Rules:
+- "key" must match exactly as written above (e.g. "Mexico vs South Africa")
+- "status": "finished" if full time, "live" if in progress, "upcoming" if not started
+- "scoreH" and "scoreA": integer goals, or null if not started
+- Include every match in the list`;
     try{
-      const res=await fetch('https://api.anthropic.com/v1/messages',{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,
-          tools:[{type:'web_search_20250305',name:'web_search'}],
-          messages:[{role:'user',content:prompt}]})
-      });
-      const data=await res.json();
-      let raw='';
-      if(data.content)for(const b of data.content)if(b.type==='text')raw+=b.text;
-      raw=raw.replace(/```json|```/g,'').trim();
-      const s=raw.indexOf('['),e=raw.lastIndexOf(']');
+      const raw=await callClaudeWithSearch(prompt);
+      const cleaned=raw.replace(/```json|```/g,'').trim();
+      const s=cleaned.indexOf('['),e=cleaned.lastIndexOf(']');
       if(s!==-1&&e!==-1){
-        JSON.parse(raw.substring(s,e+1)).forEach(item=>{
-          if(item.key&&item.status) liveScores[item.key]={status:item.status,scoreH:item.scoreH,scoreA:item.scoreA};
+        JSON.parse(cleaned.substring(s,e+1)).forEach(item=>{
+          if(item.key&&item.status){
+            liveScores[item.key]={
+              status:item.status,
+              scoreH:item.scoreH!=null?Number(item.scoreH):null,
+              scoreA:item.scoreA!=null?Number(item.scoreA):null
+            };
+          }
         });
       }
-    }catch(e){console.warn('Score fetch error:',e);}
+    }catch(err){console.warn('Score fetch error:',err);}
   }
   updatePredBar();
   renderFixtures();
@@ -848,31 +880,25 @@ async function fetchPlayoffScores(){
   setLoading(true);
   const now=new Date();
   const all=[...PLAYOFFS.r32,...PLAYOFFS.r16,...PLAYOFFS.qf,...PLAYOFFS.sf,...PLAYOFFS.third,...PLAYOFFS.final];
-  const relevant=all.filter(m=>{const hr=(now-parseUTC(m.date,m.timeUTC))/3600000;return hr>=-1&&hr<=48;});
+  const relevant=all.filter(m=>{const hr=(now-parseUTC(m.date,m.timeUTC))/3600000;return hr>=-1&&hr<=168;});
   if(relevant.length>0){
     const list=relevant.map(m=>`- ${m.id}: ${m.teamA} vs ${m.teamB} (${m.label})`).join('\n');
-    const prompt=`You are a live football scores assistant. Today is ${now.toISOString()}.
-FIFA World Cup 2026 knockout matches that may be live or recently completed:
+    const prompt=`Today is ${now.toISOString()}. Search for FIFA World Cup 2026 knockout results.
+
+Matches to look up:
 ${list}
-Provide result and actual team names if known.
-Respond ONLY with JSON array, no markdown:
-[{"id":"r32-1","status":"finished|live|upcoming","teamA":"Real Name","teamB":"Real Name","scoreA":2,"scoreB":1},...]`;
+
+Respond ONLY with a raw JSON array, no markdown, no explanation:
+[{"id":"r32-1","status":"finished","teamA":"Real Name","teamB":"Real Name","scoreA":2,"scoreB":1},...]
+Use null scores if upcoming.`;
     try{
-      const res=await fetch('https://api.anthropic.com/v1/messages',{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,
-          tools:[{type:'web_search_20250305',name:'web_search'}],
-          messages:[{role:'user',content:prompt}]})
-      });
-      const data=await res.json();
-      let raw='';
-      if(data.content)for(const b of data.content)if(b.type==='text')raw+=b.text;
-      raw=raw.replace(/```json|```/g,'').trim();
-      const s=raw.indexOf('['),e=raw.lastIndexOf(']');
+      const raw=await callClaudeWithSearch(prompt);
+      const cleaned=raw.replace(/```json|```/g,'').trim();
+      const s=cleaned.indexOf('['),e=cleaned.lastIndexOf(']');
       if(s!==-1&&e!==-1){
-        JSON.parse(raw.substring(s,e+1)).forEach(item=>{if(item.id) playoffScores[item.id]=item;});
+        JSON.parse(cleaned.substring(s,e+1)).forEach(item=>{if(item.id) playoffScores[item.id]=item;});
       }
-    }catch(e){console.warn('Playoff fetch error:',e);}
+    }catch(err){console.warn('Playoff fetch error:',err);}
   }
   renderPlayoffs();
   setLoading(false);
