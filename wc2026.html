@@ -636,36 +636,6 @@ function renderFixtures(){
 }
 
 // ══════════════════════════════════════════════════════════
-// TAB: RESULTS
-// ══════════════════════════════════════════════════════════
-function renderResults(){
-  const c=document.getElementById('resultsContainer');
-  c.innerHTML='';
-  const done=[];
-  GROUPS.forEach(g=>g.matches.forEach(m=>{
-    const info=getStatus(m);
-    if(info.status!=='finished'&&info.status!=='live') return;
-    const kick=fmtSAST(m.date,m.timeUTC);
-    done.push({m,g:g.id,kick});
-  }));
-  if(done.length===0){
-    c.innerHTML=`<div class="empty-state"><div class="empty-icon">⏳</div><p>No completed matches yet.<br>Results will appear here as games finish.</p></div>`;
-    return;
-  }
-  done.sort((a,b)=>b.kick.ts-a.kick.ts);
-  let lastDate='';
-  done.forEach(({m,g,kick})=>{
-    if(kick.saDate!==lastDate){
-      lastDate=kick.saDate;
-      const div=document.createElement('div');
-      div.className='date-divider';
-      div.innerHTML=`<div class="date-divider-line"></div><div class="date-divider-label">${kick.date.replace(/^[A-Za-z]+,?\s*/,'')}</div><div class="date-divider-line"></div>`;
-      c.appendChild(div);
-    }
-    c.appendChild(buildMatchCard(m,g,'result'));
-  });
-}
-// ══════════════════════════════════════════════════════════
 // SCORE FETCHING (SIMULATED FOR 2026)
 // ══════════════════════════════════════════════════════════
 function setLoading(on){
