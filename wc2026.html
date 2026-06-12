@@ -630,24 +630,36 @@ function setLoading(on){
 }
 
 async function callClaudeWithSearch(prompt){
-  const messages=[{role:'user',content:prompt}],tools=[{type:'web_search_20250305',name:'web_search'}];
-  let raw='';
-  for(let turn=0;turn<6;turn++){
+  // Simple single-turn call — no tool use, just direct knowledge query
+  try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2000,tools,messages})
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':API_KEY,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:2000,
+        system:'You are a FIFA World Cup 2026 scores assistant. You have up-to-date knowledge of all match results. Always respond with ONLY a raw JSON array — no markdown, no explanation, no preamble.',
+        messages:[{role:'user',content:prompt}]
+      })
     });
-    if(!res.ok){console.warn('API error:',res.status,await res.text());break;}
+    if(!res.ok){
+      const err=await res.text();
+      console.warn('API error:',res.status,err);
+      document.getElementById('lastUpdated').textContent='API error '+res.status+' — check your key in ⚙️';
+      return '';
+    }
     const data=await res.json();
-    if(!data.content)break;
-    for(const b of data.content)if(b.type==='text')raw+=b.text;
-    const tu=data.content.filter(b=>b.type==='tool_use');
-    if(data.stop_reason==='end_turn'||tu.length===0)break;
-    messages.push({role:'assistant',content:data.content});
-    messages.push({role:'user',content:tu.map(b=>({type:'tool_result',tool_use_id:b.id,content:'Search completed. Use your knowledge of current FIFA World Cup 2026 scores.'}))});
+    if(data.content&&data.content[0]&&data.content[0].type==='text') return data.content[0].text;
+  }catch(e){
+    console.warn('Fetch error:',e);
+    document.getElementById('lastUpdated').textContent='Network error — '+e.message;
   }
-  return raw;
+  return '';
 }
 
 async function fetchLiveScores(){
@@ -656,7 +668,7 @@ async function fetchLiveScores(){
   GROUPS.forEach(g=>g.matches.forEach(m=>{const hr=(now-parseUTC(m.date,m.timeUTC))/3600000;if(hr>=-1&&hr<=168)relevant.push({group:g.id,home:m.home,away:m.away,key:matchKey(m)});}));
   if(relevant.length>0){
     const list=relevant.map(m=>`- ${m.home} vs ${m.away} (Group ${m.group})`).join('\n');
-    const prompt=`Today is ${now.toISOString()}. The FIFA World Cup 2026 has started.\n\nSearch for the current scores of these group stage matches:\n${list}\n\nThen respond ONLY with a raw JSON array — no markdown fences, no explanation:\n[{"key":"Mexico vs South Africa","status":"finished","scoreH":1,"scoreA":0},...]\n\nRules:\n- key must match exactly as written above\n- status: finished if full time, live if in progress, upcoming if not started\n- scoreH and scoreA: integer goals, or null if not started\n- Include every match in the list`;
+    const prompt=`Today is ${now.toISOString()}. The FIFA World Cup 2026 group stage is in progress.\n\nProvide the current scores for these matches:\n${list}\n\n[{"key":"Mexico vs South Africa","status":"finished","scoreH":1,"scoreA":0},...]\n\nRules:\n- key must match EXACTLY as written (e.g. "Mexico vs South Africa")\n- status: "finished" if full time, "live" if in progress, "upcoming" if not yet started\n- scoreH = home goals, scoreA = away goals, integer or null if not started\n- Return ALL matches from the list above`;
     try{
       const raw=await callClaudeWithSearch(prompt),cleaned=raw.replace(/```json|```/g,'').trim(),s=cleaned.indexOf('['),e=cleaned.lastIndexOf(']');
       if(s!==-1&&e!==-1){JSON.parse(cleaned.substring(s,e+1)).forEach(item=>{if(item.key&&item.status)liveScores[item.key]={status:item.status,scoreH:item.scoreH!=null?Number(item.scoreH):null,scoreA:item.scoreA!=null?Number(item.scoreA):null};});}
@@ -673,7 +685,7 @@ async function fetchPlayoffScores(){
   const relevant=all.filter(m=>{const hr=(now-parseUTC(m.date,m.timeUTC))/3600000;return hr>=-1&&hr<=168;});
   if(relevant.length>0){
     const list=relevant.map(m=>`- ${m.id}: ${m.teamA} vs ${m.teamB} (${m.label})`).join('\n');
-    const prompt=`Today is ${now.toISOString()}. Search for FIFA World Cup 2026 knockout results.\n\nMatches to look up:\n${list}\n\nRespond ONLY with a raw JSON array, no markdown:\n[{"id":"r32-1","status":"finished","teamA":"Real Name","teamB":"Real Name","scoreA":2,"scoreB":1},...]\nUse null scores if upcoming.`;
+    const prompt=`Today is ${now.toISOString()}. FIFA World Cup 2026 knockout stage.\n\nProvide results for:\n${list}\n\n[{"id":"r32-1","status":"finished","teamA":"Real Name","teamB":"Real Name","scoreA":2,"scoreB":1},...]\nUse null scores if upcoming.`;
     try{
       const raw=await callClaudeWithSearch(prompt),cleaned=raw.replace(/```json|```/g,'').trim(),s=cleaned.indexOf('['),e=cleaned.lastIndexOf(']');
       if(s!==-1&&e!==-1)JSON.parse(cleaned.substring(s,e+1)).forEach(item=>{if(item.id)playoffScores[item.id]=item;});
