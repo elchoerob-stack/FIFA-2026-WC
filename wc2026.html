@@ -69,6 +69,7 @@ header h1 span{color:var(--gold);}
 .match-status-badge{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:2px 7px;border-radius:10px;}
 .badge-finished{background:var(--finished);color:#fff;}
 .badge-predicted{background:rgba(200,168,75,.92);color:#0a0f0d;}
+.badge-forecast{background:rgba(139,110,240,.85);color:#fff;}
 .badge-upcoming{background:rgba(200,168,75,.12);color:var(--gold);border:1px solid rgba(200,168,75,.3);}
 .score-block{display:flex;align-items:center;gap:5px;}
 .score{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;color:var(--text);min-width:22px;text-align:center;line-height:1;}
@@ -422,11 +423,9 @@ function getScore(m){
   return SCORES[k] !== undefined ? SCORES[k] : (SCORES_DEFAULT[k] || null);
 }
 
-// Real knockout-stage picks shipped with the app, current through the completed Round of
-// 16 and the two finished quarter-finals (France-Morocco, Spain-Belgium). Norway-England
-// and Argentina-Switzerland are still to be decided as of this update, so they're left
-// blank for predictions/sync to fill in.
-const PICKS_DEFAULT = {
+// Real knockout-stage results shipped with the app, current through the completed Round
+// of 16 and the two finished quarter-finals (France-Morocco, Spain-Belgium).
+const PICKS_CONFIRMED = {
   'r32-1':{scoreA:0,scoreB:1},
   'r32-2':{scoreA:1,scoreB:1,penaltyWinner:'B',teamBOverride:'Paraguay'},
   'r32-3':{scoreA:1,scoreB:1,penaltyWinner:'B'},
@@ -454,8 +453,33 @@ const PICKS_DEFAULT = {
   'qf-1':{scoreA:2,scoreB:0},
   'qf-2':{scoreA:2,scoreB:1}
 };
+
+// Claude's own analytical projections for the rounds still undecided as of this update
+// (Norway-England and Argentina-Switzerland hadn't finished; the semis, 3rd place and
+// final hadn't been played at all). These are forecasts, not results — based on tournament
+// form, team news and public model/pundit consensus at the time, not any inside info.
+// A user's own pick, or a real result pulled in via Settings -> Sync, always overrides these.
+const PICKS_PROJECTED = {
+  'qf-3':{scoreA:1,scoreB:2},   // Norway 1-2 England
+  'qf-4':{scoreA:2,scoreB:1},   // Argentina 2-1 Switzerland
+  'sf-1':{scoreA:2,scoreB:1},   // France 2-1 Spain
+  'sf-2':{scoreA:1,scoreB:2},   // England 1-2 Argentina
+  '3rd':{scoreA:2,scoreB:1},    // Spain 2-1 England
+  'final':{scoreA:2,scoreB:1}   // France 2-1 Argentina — France wins the 2026 World Cup
+};
+
 function getPick(matchId){
-  return PICKS[matchId] !== undefined ? PICKS[matchId] : (PICKS_DEFAULT[matchId] || {});
+  if(PICKS[matchId] !== undefined) return PICKS[matchId];
+  if(PICKS_CONFIRMED[matchId] !== undefined) return PICKS_CONFIRMED[matchId];
+  return PICKS_PROJECTED[matchId] || {};
+}
+// 'user' = you predicted it yourself; 'confirmed' = a real result; 'projected' = Claude's
+// forecast for a match not yet decided; 'none' = nothing entered at all.
+function getPickSource(matchId){
+  if(PICKS[matchId] !== undefined) return 'user';
+  if(PICKS_CONFIRMED[matchId] !== undefined) return 'confirmed';
+  if(PICKS_PROJECTED[matchId] !== undefined) return 'projected';
+  return 'none';
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1131,7 +1155,13 @@ function renderPlayoffs(){
       const tbA=!et.teamA, tbB=!et.teamB;
       const pick=getPick(m.id);
       const hasResult = pick.scoreA!=null && pick.scoreB!=null;
-      const badge = hasResult ? '<span class="match-status-badge badge-predicted">✓ Predicted</span>' : '<span class="match-status-badge badge-upcoming">Upcoming</span>';
+      const source = getPickSource(m.id);
+      let badge = '<span class="match-status-badge badge-upcoming">Upcoming</span>';
+      if(hasResult){
+        if(source==='confirmed') badge = '<span class="match-status-badge badge-finished">✓ Full Time</span>';
+        else if(source==='projected') badge = '<span class="match-status-badge badge-forecast">🔮 Claude’s Pick</span>';
+        else badge = '<span class="match-status-badge badge-predicted">✓ Predicted</span>';
+      }
       const scoreA = hasResult ? pick.scoreA : '—';
       const scoreB = hasResult ? pick.scoreB : '—';
       const card=document.createElement('div');card.className=`playoff-match editable${isFinal?' final-match':''}`;
