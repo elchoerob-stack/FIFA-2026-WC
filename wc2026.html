@@ -375,6 +375,89 @@ let PICKS = {};
 try { PICKS = JSON.parse(localStorage.getItem('wc2026_playoff_picks') || '{}'); } catch(e){ PICKS = {}; }
 function savePicks(){ localStorage.setItem('wc2026_playoff_picks', JSON.stringify(PICKS)); }
 
+// Real results shipped with the app, current as of 11 July 2026 (through the completed
+// Round of 16 plus the two finished quarter-finals). Anything a user has entered or
+// synced locally in SCORES/PICKS always takes precedence over these — see getScore()/
+// getPick() below. Clearing a local entry reverts to the value here, if any.
+const SCORES_DEFAULT = {
+  'Mexico vs South Africa':{scoreH:2,scoreA:0}, 'Korea Republic vs Czechia':{scoreH:2,scoreA:1},
+  'Czechia vs South Africa':{scoreH:1,scoreA:1}, 'Mexico vs Korea Republic':{scoreH:1,scoreA:0},
+  'Czechia vs Mexico':{scoreH:0,scoreA:3}, 'South Africa vs Korea Republic':{scoreH:1,scoreA:0},
+  'Canada vs Bosnia & Herz.':{scoreH:1,scoreA:1}, 'Qatar vs Switzerland':{scoreH:1,scoreA:1},
+  'Switzerland vs Bosnia & Herz.':{scoreH:4,scoreA:1}, 'Canada vs Qatar':{scoreH:6,scoreA:0},
+  'Switzerland vs Canada':{scoreH:3,scoreA:1}, 'Bosnia & Herz. vs Qatar':{scoreH:3,scoreA:1},
+  'Brazil vs Morocco':{scoreH:1,scoreA:1}, 'Haiti vs Scotland':{scoreH:0,scoreA:1},
+  'Scotland vs Morocco':{scoreH:0,scoreA:1}, 'Brazil vs Haiti':{scoreH:3,scoreA:0},
+  'Scotland vs Brazil':{scoreH:0,scoreA:3}, 'Morocco vs Haiti':{scoreH:4,scoreA:2},
+  'United States vs Paraguay':{scoreH:4,scoreA:1}, 'Australia vs Türkiye':{scoreH:2,scoreA:0},
+  'Türkiye vs Paraguay':{scoreH:0,scoreA:1}, 'United States vs Australia':{scoreH:2,scoreA:0},
+  'Türkiye vs United States':{scoreH:3,scoreA:2}, 'Paraguay vs Australia':{scoreH:0,scoreA:0},
+  'Germany vs Curaçao':{scoreH:7,scoreA:1}, 'Ivory Coast vs Ecuador':{scoreH:1,scoreA:0},
+  'Ecuador vs Curaçao':{scoreH:0,scoreA:0}, 'Germany vs Ivory Coast':{scoreH:2,scoreA:1},
+  'Ecuador vs Germany':{scoreH:2,scoreA:1}, 'Curaçao vs Ivory Coast':{scoreH:0,scoreA:2},
+  'Netherlands vs Japan':{scoreH:2,scoreA:2}, 'Sweden vs Tunisia':{scoreH:5,scoreA:1},
+  'Tunisia vs Japan':{scoreH:0,scoreA:4}, 'Netherlands vs Sweden':{scoreH:5,scoreA:1},
+  'Tunisia vs Netherlands':{scoreH:1,scoreA:3}, 'Japan vs Sweden':{scoreH:1,scoreA:1},
+  'Belgium vs Egypt':{scoreH:1,scoreA:1}, 'Iran vs New Zealand':{scoreH:2,scoreA:2},
+  'New Zealand vs Egypt':{scoreH:1,scoreA:3}, 'Belgium vs Iran':{scoreH:0,scoreA:0},
+  'New Zealand vs Belgium':{scoreH:1,scoreA:5}, 'Egypt vs Iran':{scoreH:1,scoreA:1},
+  'Spain vs Cape Verde':{scoreH:0,scoreA:0}, 'Saudi Arabia vs Uruguay':{scoreH:1,scoreA:1},
+  'Uruguay vs Cape Verde':{scoreH:2,scoreA:2}, 'Spain vs Saudi Arabia':{scoreH:4,scoreA:0},
+  'Uruguay vs Spain':{scoreH:0,scoreA:1}, 'Cape Verde vs Saudi Arabia':{scoreH:0,scoreA:0},
+  'France vs Senegal':{scoreH:3,scoreA:1}, 'Iraq vs Norway':{scoreH:1,scoreA:4},
+  'Norway vs Senegal':{scoreH:3,scoreA:2}, 'France vs Iraq':{scoreH:3,scoreA:0},
+  'Norway vs France':{scoreH:1,scoreA:4}, 'Senegal vs Iraq':{scoreH:5,scoreA:0},
+  'Argentina vs Algeria':{scoreH:3,scoreA:0}, 'Austria vs Jordan':{scoreH:3,scoreA:1},
+  'Jordan vs Algeria':{scoreH:1,scoreA:2}, 'Argentina vs Austria':{scoreH:2,scoreA:0},
+  'Jordan vs Argentina':{scoreH:1,scoreA:3}, 'Algeria vs Austria':{scoreH:3,scoreA:3},
+  'Portugal vs DR Congo':{scoreH:1,scoreA:1}, 'Uzbekistan vs Colombia':{scoreH:1,scoreA:3},
+  'Colombia vs DR Congo':{scoreH:1,scoreA:0}, 'Portugal vs Uzbekistan':{scoreH:5,scoreA:0},
+  'Colombia vs Portugal':{scoreH:0,scoreA:0}, 'DR Congo vs Uzbekistan':{scoreH:3,scoreA:1},
+  'England vs Croatia':{scoreH:4,scoreA:2}, 'Ghana vs Panama':{scoreH:1,scoreA:0},
+  'Panama vs Croatia':{scoreH:0,scoreA:1}, 'England vs Ghana':{scoreH:0,scoreA:0},
+  'Panama vs England':{scoreH:0,scoreA:2}, 'Croatia vs Ghana':{scoreH:2,scoreA:1}
+};
+function getScore(m){
+  const k = matchKey(m);
+  return SCORES[k] !== undefined ? SCORES[k] : (SCORES_DEFAULT[k] || null);
+}
+
+// Real knockout-stage picks shipped with the app, current through the completed Round of
+// 16 and the two finished quarter-finals (France-Morocco, Spain-Belgium). Norway-England
+// and Argentina-Switzerland are still to be decided as of this update, so they're left
+// blank for predictions/sync to fill in.
+const PICKS_DEFAULT = {
+  'r32-1':{scoreA:0,scoreB:1},
+  'r32-2':{scoreA:1,scoreB:1,penaltyWinner:'B',teamBOverride:'Paraguay'},
+  'r32-3':{scoreA:1,scoreB:1,penaltyWinner:'B'},
+  'r32-4':{scoreA:2,scoreB:1},
+  'r32-5':{scoreA:3,scoreB:0,teamBOverride:'Sweden'},
+  'r32-6':{scoreA:1,scoreB:2},
+  'r32-7':{scoreA:2,scoreB:0,teamBOverride:'Ecuador'},
+  'r32-8':{scoreA:2,scoreB:1,teamBOverride:'DR Congo'},
+  'r32-9':{scoreA:2,scoreB:0,teamBOverride:'Bosnia & Herz.'},
+  'r32-10':{scoreA:3,scoreB:2,teamBOverride:'Senegal'},
+  'r32-11':{scoreA:2,scoreB:1},
+  'r32-12':{scoreA:3,scoreB:0},
+  'r32-13':{scoreA:2,scoreB:0,teamBOverride:'Algeria'},
+  'r32-14':{scoreA:3,scoreB:2},
+  'r32-15':{scoreA:1,scoreB:0,teamBOverride:'Ghana'},
+  'r32-16':{scoreA:1,scoreB:1,penaltyWinner:'B'},
+  'r16-1':{scoreA:0,scoreB:1},
+  'r16-2':{scoreA:0,scoreB:3},
+  'r16-3':{scoreA:1,scoreB:2},
+  'r16-4':{scoreA:2,scoreB:3},
+  'r16-5':{scoreA:0,scoreB:1},
+  'r16-6':{scoreA:1,scoreB:4},
+  'r16-7':{scoreA:3,scoreB:2},
+  'r16-8':{scoreA:0,scoreB:0,penaltyWinner:'A'},
+  'qf-1':{scoreA:2,scoreB:0},
+  'qf-2':{scoreA:2,scoreB:1}
+};
+function getPick(matchId){
+  return PICKS[matchId] !== undefined ? PICKS[matchId] : (PICKS_DEFAULT[matchId] || {});
+}
+
 // ══════════════════════════════════════════════════════════
 // FIXTURE DATA
 // ══════════════════════════════════════════════════════════
@@ -616,7 +699,7 @@ let modalMatch = null, modalScoreH = 0, modalScoreA = 0;
 
 function openModal(m){
   modalMatch = m;
-  const ex = SCORES[matchKey(m)];
+  const ex = getScore(m);
   modalScoreH = ex ? ex.scoreH : 0;
   modalScoreA = ex ? ex.scoreA : 0;
   document.getElementById('modalMatchLabel').textContent = `Group ${m._gid} · MD${m.md}`;
@@ -679,7 +762,7 @@ function fmtSAST(d,t){
 
 function isMatchPast(m){ return new Date() > parseUTC(m.date, m.timeUTC); }
 
-function isGroupComplete(g){ return g.matches.every(m => SCORES[matchKey(m)] != null); }
+function isGroupComplete(g){ return g.matches.every(m => getScore(m) != null); }
 
 // Standings with a head-to-head mini-league tiebreak among teams tied on points,
 // falling back to overall goal difference / goals scored / alphabetical.
@@ -687,7 +770,7 @@ function computeStandings(g){
   const rows={};
   g.teams.forEach(t=>{rows[t]={team:t,p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0};});
   g.matches.forEach(m=>{
-    const s=SCORES[matchKey(m)]; if(!s) return;
+    const s=getScore(m); if(!s) return;
     const h=rows[m.home], a=rows[m.away];
     h.p++; a.p++; h.gf+=s.scoreH; h.ga+=s.scoreA; a.gf+=s.scoreA; a.ga+=s.scoreH;
     if(s.scoreH>s.scoreA){ h.w++; h.pts+=3; a.l++; }
@@ -704,7 +787,7 @@ function computeStandings(g){
     const h2h={};
     tier.forEach(r=>h2h[r.team]={pts:0,gf:0,ga:0});
     g.matches.forEach(m=>{
-      const s=SCORES[matchKey(m)]; if(!s) return;
+      const s=getScore(m); if(!s) return;
       if(!(h2h[m.home]&&h2h[m.away])) return;
       h2h[m.home].gf+=s.scoreH; h2h[m.home].ga+=s.scoreA;
       h2h[m.away].gf+=s.scoreA; h2h[m.away].ga+=s.scoreH;
@@ -733,7 +816,7 @@ function computeStandings(g){
 function computePredStats(){
   let exact=0,result=0,wrong=0,pending=0;
   GROUPS.forEach(g=>g.matches.forEach(m=>{
-    const s=SCORES[matchKey(m)];
+    const s=getScore(m);
     if(!s){pending++;return;}
     if(s.scoreH===m.predH&&s.scoreA===m.predA){exact++;return;}
     const ar=s.scoreH>s.scoreA?'H':s.scoreH<s.scoreA?'A':'D',pr=m.predH>m.predA?'H':m.predH<m.predA?'A':'D';
@@ -844,7 +927,8 @@ async function syncResults(){
         const match = findLocalGroupMatch(homeLocal, awayLocal);
         if(match){
           const k = matchKey(match);
-          if(!SCORES[k] || SCORES[k].scoreH!==sh || SCORES[k].scoreA!==sa){
+          const current = getScore(match);
+          if(!current || current.scoreH!==sh || current.scoreA!==sa){
             SCORES[k] = { scoreH: sh, scoreA: sa };
             updated++;
           }
@@ -855,7 +939,7 @@ async function syncResults(){
       if(!found) return;
       const scoreA = found.swapped ? sa : sh;
       const scoreB = found.swapped ? sh : sa;
-      const existing = PICKS[found.match.id] || {};
+      const existing = getPick(found.match.id);
       const pick = { scoreA, scoreB };
       if(existing.teamAOverride) pick.teamAOverride = existing.teamAOverride;
       if(existing.teamBOverride) pick.teamBOverride = existing.teamBOverride;
@@ -887,7 +971,7 @@ async function syncResults(){
 // GROUP MATCH CARD (fixtures / results)
 // ══════════════════════════════════════════════════════════
 function buildMatchCard(m,gId,mode){
-  const key=matchKey(m),s=SCORES[key],kick=fmtSAST(m.date,m.timeUTC);
+  const s=getScore(m),kick=fmtSAST(m.date,m.timeUTC);
   const hasScore=s!=null,status=hasScore?'finished':'upcoming';
   const badge=hasScore
     ?'<span class="match-status-badge badge-finished">✓ Full Time</span>'
@@ -1003,7 +1087,7 @@ function resolvePlaceholder(text){
 function getEffectiveTeams(matchId){
   if(resolveCache[matchId]) return resolveCache[matchId];
   const m = PLAYOFF_BY_ID[matchId];
-  const pick = PICKS[matchId] || {};
+  const pick = getPick(matchId);
   resolveCache[matchId] = { teamA:null, teamB:null, pick }; // recursion guard
   const teamA = pick.teamAOverride || resolvePlaceholder(m.teamA);
   const teamB = pick.teamBOverride || resolvePlaceholder(m.teamB);
@@ -1045,8 +1129,8 @@ function renderPlayoffs(){
       const et=getEffectiveTeams(m.id);
       const winnerLetter=getWinnerLetter(et);
       const tbA=!et.teamA, tbB=!et.teamB;
-      const pick=PICKS[m.id];
-      const hasResult = pick && pick.scoreA!=null && pick.scoreB!=null;
+      const pick=getPick(m.id);
+      const hasResult = pick.scoreA!=null && pick.scoreB!=null;
       const badge = hasResult ? '<span class="match-status-badge badge-predicted">✓ Predicted</span>' : '<span class="match-status-badge badge-upcoming">Upcoming</span>';
       const scoreA = hasResult ? pick.scoreA : '—';
       const scoreB = hasResult ? pick.scoreB : '—';
@@ -1084,7 +1168,7 @@ function openPlayoffModal(matchId){
   if(!m) return;
   currentPlayoffMatch = m;
   resolveCache = {};
-  const pick = PICKS[matchId] || {};
+  const pick = getPick(matchId);
   const suggestedA = resolvePlaceholder(m.teamA);
   const suggestedB = resolvePlaceholder(m.teamB);
   pStepH = pick.scoreA!=null ? pick.scoreA : 0;
@@ -1173,10 +1257,11 @@ function refreshAll(){
   if(id==='results')  renderResults();
   if(id==='standings') renderStandings();
   if(id==='playoffs') renderPlayoffs();
-  const scored=Object.keys(SCORES).length;
-  document.getElementById('lastUpdated').textContent=scored>0
-    ?`${scored} result${scored>1?'s':''} saved · tap any past match on Results to edit`
-    :'Go to Results tab · tap any match to enter score';
+  const totalMatches = GROUPS.reduce((n,g)=>n+g.matches.length,0);
+  const known = GROUPS.reduce((n,g)=>n+g.matches.filter(m=>getScore(m)!=null).length,0);
+  document.getElementById('lastUpdated').textContent = known>0
+    ? `${known} of ${totalMatches} group results known · tap any match on Results to correct`
+    : 'Go to Results tab · tap any match to enter score';
 }
 
 refreshAll();
