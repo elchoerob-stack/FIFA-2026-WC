@@ -698,7 +698,20 @@ function dismissBanner(){
 }
 
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  navigator.serviceWorker.register('./sw.js').then(reg => {
+    reg.update();
+    document.addEventListener('visibilitychange', () => {
+      if(document.visibilityState === 'visible') reg.update();
+    });
+  }).catch(()=>{});
+  // When a new service worker takes over (fresh content is available), reload once
+  // automatically so results/predictions are never stuck behind a stale cache.
+  let swRefreshed = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if(swRefreshed) return;
+    swRefreshed = true;
+    window.location.reload();
+  });
 }
 
 setTimeout(showInstallBanner, 1500);
@@ -1035,19 +1048,47 @@ function switchTab(id,btn){
 // ══════════════════════════════════════════════════════════
 // RENDERS: FIXTURES / RESULTS
 // ══════════════════════════════════════════════════════════
+function buildUpcomingPlayoffCard(m){
+  const kick=fmtSAST(m.date,m.timeUTC);
+  resolveCache = {};
+  const et=getEffectiveTeams(m.id);
+  const tbA=!et.teamA, tbB=!et.teamB;
+  const pick=getPick(m.id);
+  const hasPick = pick.scoreA!=null && pick.scoreB!=null;
+  const source=getPickSource(m.id);
+  const roundLabel = m.id.startsWith('r32')?'R32':m.id.startsWith('r16')?'R16':m.id.startsWith('qf')?'QF':m.id.startsWith('sf')?'SF':(m.id==='3rd'?'3RD':'FINAL');
+  let center = '<span class="match-status-badge badge-upcoming">Upcoming</span>';
+  if(hasPick){
+    const pickLabel = source==='projected' ? "claude's pick" : source==='user' ? 'your prediction' : 'result';
+    center += `<div class="pred-label" style="margin-top:4px">${pickLabel}</div><div class="pred-score">${pick.scoreA}–${pick.scoreB}</div>`;
+  }
+  const card=document.createElement('div');
+  card.className='match-card status-upcoming editable';
+  card.innerHTML=`<div class="team-side left"><div class="flag">${tbA?'':(FLAGS[et.teamA]||'')}</div><div class="team-name"${tbA?' style="color:var(--muted);font-style:italic;font-size:11px;"':''}>${tbA?m.teamA:et.teamA}</div></div>`+
+    `<div class="match-center"><div style="display:flex;gap:4px;align-items:center;margin-bottom:2px;"><span class="md-tag">${roundLabel}</span><span class="group-tag">${m.label}</span></div>${center}<div class="match-meta"><div class="match-date">${kick.date}</div><div class="match-time">${kick.time}</div><div class="match-venue">${m.venue}</div></div></div>`+
+    `<div class="team-side right"><div class="flag">${tbB?'':(FLAGS[et.teamB]||'')}</div><div class="team-name"${tbB?' style="color:var(--muted);font-style:italic;font-size:11px;"':''}>${tbB?m.teamB:et.teamB}</div></div>`;
+  card.addEventListener('click', ()=>openPlayoffModal(m.id));
+  return card;
+}
+
 function renderFixtures(){
   const c=document.getElementById('fixturesContainer');c.innerHTML='';
   const up=[];
   GROUPS.forEach(g=>g.matches.forEach(m=>{
     if(isMatchPast(m)) return;
-    const kick=fmtSAST(m.date,m.timeUTC);up.push({m,g:g.id,kick});
+    const kick=fmtSAST(m.date,m.timeUTC);up.push({kind:'group',m,g:g.id,kick});
   }));
-  if(up.length===0){c.innerHTML='<div class="empty-state"><div class="empty-icon">🏁</div><p>All group stage matches have kicked off.</p></div>';return;}
+  Object.values(PLAYOFF_BY_ID).forEach(m=>{
+    if(isMatchPast(m)) return;
+    const kick=fmtSAST(m.date,m.timeUTC);up.push({kind:'playoff',m,kick});
+  });
+  if(up.length===0){c.innerHTML='<div class="empty-state"><div class="empty-icon">🏁</div><p>No fixtures left to play — the tournament is complete.</p></div>';return;}
   up.sort((a,b)=>a.kick.ts-b.kick.ts);
   let last='';
-  up.forEach(({m,g,kick})=>{
+  up.forEach(item=>{
+    const {kick}=item;
     if(kick.saDate!==last){last=kick.saDate;const d=document.createElement('div');d.className='date-divider';d.innerHTML=`<div class="date-divider-line"></div><div class="date-divider-label">${kick.date.replace(/^[A-Za-z]+,?\s*/,'')}</div><div class="date-divider-line"></div>`;c.appendChild(d);}
-    c.appendChild(buildMatchCard(m,g,'upcoming'));
+    c.appendChild(item.kind==='group' ? buildMatchCard(item.m,item.g,'upcoming') : buildUpcomingPlayoffCard(item.m));
   });
 }
 
